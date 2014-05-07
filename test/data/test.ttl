@@ -1,0 +1,32 @@
+@prefix schema: <http://schema.org/> .
+@prefix static: <http://vocab-ld.org/vocab/static-ld#> .
+@prefix xhtml: <http://www.w3.org/1999/xhtml#> .
+
+# Our template classes
+schema:BlogPosting a static:Template .
+schema:Blog a static:Template .
+
+
+# Sample content
+<./index.html>
+  schema:blogPost <./post-1.html>, <./post-2.html> <./post-3.html> ;
+  schema:name "My test blog" ;
+  a schema:Blog . 
+
+
+<./post-1.html>
+  schema:name "Post 1" ;
+  xhtml:start <./index.html> ;
+  a schema:BlogPosting .
+
+
+<./post-2.html>
+  schema:name "Post 2" ;
+  xhtml:start <./index.html> ;
+  a schema:BlogPosting .
+
+
+<./post-3.html>
+  schema:name "Post 3" ;
+  xhtml:start <./index.html> ;a
+  a schema:BlogPosting .

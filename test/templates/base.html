@@ -1,0 +1,8 @@
+<!doctype html>
+<html>
+  <title>{{ subject.get("schema:name") }}</title>
+  <body>
+    {% if subject.get("xhtml:start") %}<div><a href="{{ subject.get("xhtml:start")">Home</a></div>{% endif %}
+    {% block content %}{% endblock %}
+  </body>
+</html>
