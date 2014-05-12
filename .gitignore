@@ -1,2 +1,8 @@
 *~
 *.pyc
+##*
+/bin/#staticld#
+/bin/.#staticld
+build/
+dist/
+*.egg-info

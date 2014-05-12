@@ -13,6 +13,8 @@ WORKDIR /src
 RUN pip install pytest
 
 ADD . /src
+RUN python setup.py develop
 RUN make
+
 RUN python setup.py install
 RUN make acceptance
