@@ -1,0 +1,8 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix static: <http://vocab-ld.org/vocab/static-ld#> .
+
+static:Template 
+  a rdf:Class ;
+  rdfs:comment "Tag your classes with this class if you want static-ld to render your class as a template" .
+
