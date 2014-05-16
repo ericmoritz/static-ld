@@ -1,7 +1,7 @@
 from collections import namedtuple
 import sys
 import os
-from rdflib import Graph, URIRef, Literal
+from rdflib import Graph, URIRef, Literal, Namespace
 from jinja2 import Environment, FileSystemLoader
 from io import BytesIO
 from urlparse import urlparse
@@ -32,10 +32,14 @@ class App(namedtuple("Config", ["site_url", "format", "template_root", "output_r
 
     def __call__(app):
         g = app._io_parse_graph()
+
         # configure the jinja2 env
         env =  Environment(
             loader=FileSystemLoader(app.template_root)
         )
+
+        # detect static:Template classes using the template filenames
+        g = app._detect_templates_classes(g, env)
 
         # find all the subjects with template classes
         subjects = app._find_all_subjects(g)
@@ -69,6 +73,28 @@ class App(namedtuple("Config", ["site_url", "format", "template_root", "output_r
         u'/tmp/output/foo.txt'
         """
         return os.path.join(app.output_root, uri)
+
+    def _detect_templates_classes(app, g, env):
+        # index the namespaces
+        rdf = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+        static = Namespace("http://vocab-ld.org/vocab/static-ld#")
+        
+        for template in env.list_templates():
+            qname, ext = os.path.splitext(template)
+            try:
+                uri = _expand_qname(g, qname)
+            except:
+                uri = None
+
+            if uri:
+                g.add(
+                    (
+                        URIRef(uri),
+                        rdf.type,
+                        static.Template
+                    )
+                )
+        return g
 
     def _find_all_subjects(app, g):
         """

@@ -1,0 +1,27 @@
+@prefix schema: <http://schema.org/> .
+@prefix static: <http://vocab-ld.org/vocab/static-ld#> .
+@prefix xhtml: <http://www.w3.org/1999/xhtml#> .
+
+# Sample content
+<./index.html>
+  schema:blogPost <./posts/post-1.html>, <./posts/post-2.html>, <./posts/post-3.html> ;
+  schema:name "My test blog" ;
+  a schema:Blog . 
+
+
+<./posts/post-1.html>
+  schema:name "Post 1" ;
+  xhtml:start <./index.html> ;
+  a schema:BlogPosting .
+
+
+<./posts/post-2.html>
+  schema:name "Post 2" ;
+  xhtml:start <./index.html> ;
+  a schema:BlogPosting .
+
+
+<./posts/post-3.html>
+  schema:name "Post 3" ;
+  xhtml:start <./index.html> ;
+  a schema:BlogPosting .

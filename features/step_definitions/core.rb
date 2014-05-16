@@ -1,5 +1,10 @@
+Given(/^I have an empty directory at "(.*?)"$/) do |output_dir|
+  raise unless system("rm -rf '#{output_dir}'")
+  raise unless system("mkdir -p '#{output_dir}'")
+end
 
-Given /^I run the command "([^"]*)"$/ do |cmd|
+
+When /^I run the command "([^"]*)"$/ do |cmd|
   raise unless system(cmd)
 end
 

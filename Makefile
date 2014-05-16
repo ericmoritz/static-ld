@@ -9,5 +9,5 @@ test: dev
 
 acceptance:
 	mkdir -p test/output
-	cucumber
+	cucumber --no-color
 
