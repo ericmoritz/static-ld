@@ -1,27 +1,24 @@
 from collections import namedtuple
 import sys
-from rdflib import Graph
+import os
+from rdflib import Graph, URIRef, Literal
 from jinja2 import Environment, FileSystemLoader
 from io import BytesIO
 from urlparse import urlparse
+from logging import getLogger
+import urlparse
+import sys
+import posixpath
 
-Config = namedtuple(
-    "Config", 
-    [
-        "format", # rdflib format
-        "template_root",  # the root dir for the templates
-        "output_root", # the root dir for the renderings
-        "input_file",   # the file handle to read the statements from
-    ]
-)
-    
+
+log = getLogger(__name__)
 
 class ImmutableClass(object):
     def __setattr__(self, *args, **kwargs):
         raise AttributeError("can't set attribute")
 
 
-class App(namedtuple("Config", ["format", "template_root", "output_root", "input_file"]), ImmutableClass):
+class App(namedtuple("Config", ["site_url", "format", "template_root", "output_root", "input_file"]), ImmutableClass):
     def __init__(self, *args, **kwargs):
         super(App, self).__init__(*args, **kwargs)
         # TODO assert inputs
@@ -30,35 +27,48 @@ class App(namedtuple("Config", ["format", "template_root", "output_root", "input
         return Graph().parse(
             app.input_file, 
             format=app.format, 
-            publicID=app.output_root
+            publicID=app.site_url
         )
 
     def __call__(app):
         g = app._io_parse_graph()
-
         # configure the jinja2 env
-        env =  Environment(loader=FileSystemLoader(app.template_root))
+        env =  Environment(
+            loader=FileSystemLoader(app.template_root)
+        )
 
         # find all the subjects with template classes
         subjects = app._find_all_subjects(g)
 
         # render those subjects according to their template class
         for subject in subjects:
+            relative_uri_to_subject = lambda uri: relative_uri(subject.uri, uri)
             template = env.get_template(subject.template)
-            rendering = template.render()
-            app._io_write_rendering(subject.uri, rendering)
+            path = app._uri_to_path(relative_uri(app.site_url, subject.uri))
 
-            path = app._uri_to_path(uri)
-            _io_ensure_path(path)
+            log.info("Rendering {uri!r} using {template!r} to {path!r}".format(
+                uri=subject.uri,
+                template=subject.template,
+                path=path
+            ))
+
+            rendering = template.render(
+                subject=subject,
+                graph=g,
+                URIRef=URIRef,
+                relative_uri=relative_uri_to_subject
+            )
+
+            _mkdir(os.path.dirname(path))
             with open(path, "w") as fh:
                 fh.write(rendering)
 
     def _uri_to_path(app, uri):
         """
-        >>> __test_app()._uri_to_path(u'file:///tmp/foo.txt')
-        u'/tmp/foo.txt'
+        >>> __test_app()._uri_to_path(u'foo.txt')
+        u'/tmp/output/foo.txt'
         """
-        return urlparse(uri).path
+        return os.path.join(app.output_root, uri)
 
     def _find_all_subjects(app, g):
         """
@@ -74,9 +84,12 @@ class App(namedtuple("Config", ["format", "template_root", "output_root", "input
           ?subject a ?templateClass
         }
         """)
-
         for record in records:
-            yield Subject(record.subject.toPython(), app._uri_to_template_name(g, record.templateClass))
+            yield Subject(
+                g, 
+                record.subject, 
+                template=app._uri_to_template_name(g, record.templateClass)
+            )
 
     def _uri_to_template_name(app, g, uri):
         """
@@ -88,10 +101,91 @@ class App(namedtuple("Config", ["format", "template_root", "output_root", "input
         return g.namespace_manager.qname(uri) + ".html"
 
 
-Subject = namedtuple("Subject", ["uri", "template"])
+class Subject(object):
+    def __init__(self, g, identifier, template=None):
+        self.__g = g
+        self.id = identifier
+        self.template = template
+        self.uri = identifier.toPython()
+
+    def __repr__(self):
+        return "Subject(uri={uri!r}, template={template!r})".format(
+            uri=self.uri,
+            template=self.template
+        )
+
+    def __cmp__(self, y):
+        return cmp(
+            (self.uri, self.template),
+            (y.uri, y.template)
+        )
+
+    def get(self, predicate_uri, default=""):
+        for value in self.all(predicate_uri):
+            return value
+            break
+        else:
+            return default
+        
+    def all(self, predicate_uri):
+        if not isinstance(predicate_uri, URIRef):
+            predicate_uri = _expand_qname(self.__g, predicate_uri)
+        for obj in self.__g.objects(self.id, URIRef(predicate_uri)):
+            if not isinstance(obj, Literal):
+                yield Subject(self.__g, obj)
+            else:
+                yield obj
+            
+
+def relative_uri(base, target):
+    """
+    >>> relative_uri(u"http://example.com/foo/", u"http://example.com/foo/bar")
+    u'bar'
+
+    >>> relative_uri(u"http://example.com/baz/", u"http://example.com/foo/bar")
+    u'../foo/bar'
+
+    >>> relative_uri(u"http://example2.com/baz/", u"http://example.com/foo/bar")
+    u'http://example.com/foo/bar'
+
+    """
+    base_bits=urlparse.urlparse(base)
+    target_bits=urlparse.urlparse(target)
+    if base_bits.netloc != target_bits.netloc:
+        return target
+    base_dir='.'+posixpath.dirname(base_bits.path)
+    target='.'+target_bits.path
+    return posixpath.relpath(target,start=base_dir)
+
+            
+
+def _expand_qname(g, qname):
+    """
+    >>> _expand_qname(__test_app()._io_parse_graph(), "schema:name")
+    u'http://schema.org/name'
+
+    >>> _expand_qname(__test_app()._io_parse_graph(), "xyzzy:name")
+    Traceback (most recent call last):
+        ...
+    Exception: Unknown prefix xyzzy
+
+    u'http://schema.org/name'
+
+    """
+    prefix, name = qname.split(":")
+    for ns_prefix, uri in g.namespace_manager.namespaces():
+        if ns_prefix == prefix:
+            return uri.toPython() + name
+    raise Exception("Unknown prefix {prefix}".format(prefix=prefix))
+
+
+def _mkdir(path):
+    if not os.path.exists(path):
+        os.makedirs(os.path.abspath(path))
 
 def __test_app():
     return App(
+        site_url="file:///tmp/output/",
         format="turtle",
         template_root="/tmp/templates/",
         output_root="/tmp/output/",

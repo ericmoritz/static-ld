@@ -5,4 +5,5 @@
 /bin/.#staticld
 build/
 dist/
+test/output
 *.egg-info

@@ -1,2 +1,23 @@
 #!/usr/bin/env python
 import click
+from staticld.cmd import App
+import sys
+import os
+from logging import basicConfig, INFO, getLogger
+
+log = getLogger(__file__)
+
+@click.command()
+@click.option("--format", "-f", default="turtle", help="RDF format")
+@click.argument("template_root")
+@click.argument("output_root")
+def main(format, template_root, output_root):
+    basicConfig(level=INFO, format="%(message)s")
+    site_url = _site_url(output_root)
+    App(site_url, format, template_root, output_root, sys.stdin)()
+
+def _site_url(output_root):
+    return "file://" + os.path.abspath(output_root) + "/"
+
+if __name__ == '__main__':
+    main()

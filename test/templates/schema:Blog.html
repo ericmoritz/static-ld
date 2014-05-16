@@ -1,14 +1,19 @@
 {% extends "base.html" %}
 {% block content %}
-  {% sparql subject=subject as posts %}
-    SELECT ?uri ?name
-    WHERE {
-       ?subject schema:blogPost ?uri ;
-       ?uri schema:name ?name
-    }
-    ORDER BY ?name
-  {% endsparql %}
+  {% 
+    set posts = graph.query(
+    """
+      SELECT ?uri ?name 
+      WHERE { 
+        ?subject schema:blogPost ?uri . 
+        ?uri schema:name ?name 
+      } ORDER BY ?name
+    """,
+    initBindings={"subject": subject.id}) 
+  %}
+
   {% for post in posts %}
-    <div><a href="{{ post.uri }}">{{ post.get("schema:name").0 }}</a></div>
+    <div><a href="{{ relative_uri(post.uri) }}">{{ post.name }}</a></div>
   {% endfor %}
+
 {% endblock %}

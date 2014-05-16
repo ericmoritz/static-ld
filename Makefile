@@ -8,4 +8,6 @@ test: dev
 	py.test --doctest-modules staticld
 
 acceptance:
+	mkdir -p test/output
 	cucumber
+
