@@ -49,12 +49,8 @@ class App(namedtuple("Config", ["site_url", "format", "template_root", "output_r
             relative_uri_to_subject = lambda uri: relative_uri(subject.uri, uri)
             template = env.get_template(subject.template)
             path = app._uri_to_path(relative_uri(app.site_url, subject.uri))
-
-            log.info("Rendering {uri!r} using {template!r} to {path!r}".format(
-                uri=subject.uri,
-                template=subject.template,
-                path=path
-            ))
+            if subject.uri[-1] == '/':
+                path = path + "/index.html"
 
             rendering = template.render(
                 subject=subject,
@@ -64,6 +60,13 @@ class App(namedtuple("Config", ["site_url", "format", "template_root", "output_r
             )
 
             _mkdir(os.path.dirname(path))
+
+            log.info("Rendering {uri!r} using {template!r} to {path!r}".format(
+                uri=subject.uri,
+                template=subject.template,
+                path=path
+            ))
+
             with open(path, "w") as fh:
                 fh.write(rendering)
 
