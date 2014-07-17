@@ -49,6 +49,8 @@ class App(namedtuple("Config", ["site_url", "format", "template_root", "output_r
             relative_uri_to_subject = lambda uri: relative_uri(subject.uri, uri)
             template = env.get_template(subject.template)
             path = app._uri_to_path(relative_uri(app.site_url, subject.uri))
+            env.globals['relative_uri'] = relative_uri_to_subject
+
 
             log.info("Rendering {uri!r} using {template!r} to {path!r}".format(
                 uri=subject.uri,
