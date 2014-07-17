@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
   <title>{{ subject.get("schema:name") }}</title>
+  <link href="{{ root_uri('./foo.txt') }}" />
   <body>
     {% if subject.get("xhtml:start") %}<div><a href="{{ relative_uri(subject.get("xhtml:start").uri) }}">Home</a></div>{% endif %}
     {% block content %}{% endblock %}
