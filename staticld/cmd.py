@@ -9,18 +9,26 @@ from logging import getLogger
 import urlparse
 import sys
 import posixpath
-
+import importlib
 
 log = getLogger(__name__)
 
-class ImmutableClass(object):
-    def __setattr__(self, *args, **kwargs):
-        raise AttributeError("can't set attribute")
+
+class Settings(object):
+    def patch_env(self, env):
+        """
+        Modifies the jinja env
+        """
+        pass
 
 
-class App(namedtuple("Config", ["site_url", "format", "template_root", "output_root", "input_file"]), ImmutableClass):
+class App(namedtuple("Config", ["site_url", "format", "template_root", "output_root", "input_file", "settings_mod"])):
     def __init__(self, *args, **kwargs):
         super(App, self).__init__(*args, **kwargs)
+        if self.settings_mod:
+            self.__settings = importlib.import_module(self.settings_mod).settings
+        else:
+            self.__settings = Settings()
         # TODO assert inputs
 
     def _io_parse_graph(app):
@@ -52,6 +60,7 @@ class App(namedtuple("Config", ["site_url", "format", "template_root", "output_r
             path = app._uri_to_path(relative_uri(app.site_url, subject.uri))
             env.globals['relative_uri'] = relative_uri_to_subject
             env.globals['root_uri'] = root_uri
+            app.__settings.patch_env(env)
 
             log.info("Rendering {uri!r} using {template!r} to {path!r}".format(
                 uri=subject.uri,

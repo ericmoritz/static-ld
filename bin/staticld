@@ -9,12 +9,14 @@ log = getLogger(__file__)
 
 @click.command()
 @click.option("--format", "-f", default="turtle", help="RDF format")
+@click.option("--settings_mod", default=None, help="settings module")
 @click.argument("template_root")
 @click.argument("output_root")
-def main(format, template_root, output_root):
+
+def main(format, template_root, output_root, settings_mod):
     basicConfig(level=INFO, format="%(message)s")
     site_url = _site_url(output_root)
-    App(site_url, format, template_root, output_root, sys.stdin)()
+    App(site_url, format, template_root, output_root, sys.stdin, settings_mod)()
 
 def _site_url(output_root):
     return "file://" + os.path.abspath(output_root) + "/"
