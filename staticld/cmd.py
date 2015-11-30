@@ -10,6 +10,7 @@ import urlparse
 import sys
 import posixpath
 import importlib
+import codecs
 
 log = getLogger(__name__)
 
@@ -85,7 +86,7 @@ class App(namedtuple("Config", ["site_url", "format", "template_root", "output_r
                 path=path
             ))
 
-            with open(path, "w") as fh:
+            with codecs.open(path, "w", "utf-8") as fh:
                 fh.write(rendering)
 
     def _uri_to_path(app, uri):
