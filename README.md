@@ -10,7 +10,7 @@ Usage
 `static-ld` takes advantage of Linked Data and Jinja2 to provide a modern
 templating system for generating static content from your Linked Data.
 
-Running the follawing command
+Running the following command
 
 ```
    cat test/data/*.ttl | staticld -f turtle test/templates/ test/output/
